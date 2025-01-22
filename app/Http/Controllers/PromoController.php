@@ -24,26 +24,28 @@ class PromoController extends Controller
         return   Inertia::render('Create');
     }
 
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'code' => 'required|string|unique:promo_codes,code|max:255',
+        'type' => 'required|in:percentage,fixed',
+        'value' => 'required|numeric|min:0',
+        'start_date' => 'nullable|date',
+        'end_date' => 'nullable|date|after_or_equal:start_date',
+        'is_active' => 'required|boolean',
+        'max_uses' => 'nullable|integer|min:1',
+        'private_users' => 'nullable|json',
+        'frequency' => 'nullable|in:daily,weekly',
+    ]);
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'code' => 'required|string|unique:promo_codes,code|max:255',
-            'type' => 'required|in:percentage,fixed',
-            'value' => 'required|numeric|min:0',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'is_active' => 'required|boolean',
-            'max_uses' => 'nullable|integer|min:1',
-            'private_users' => 'nullable|array',
-            'private_users.*' => 'integer|exists:users,id',
-            'frequency' => 'nullable|in:daily,weekly',
-        ]);
+    $promoCode = PromoCode::create($validated);
 
-        PromoCode::create($request->all());
+    return response()->json([
+        'message' => 'Promo code created successfully',
+        'promo_code' => $promoCode,
+    ]);
+}
 
-        return redirect()->back()->with('success', 'Promo code created successfully.');
-    }
 
 
     public function edit(PromoCode $promo)

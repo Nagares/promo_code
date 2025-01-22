@@ -18,4 +18,4 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', PromoController::class);
 Route::get('/create',[PromoController::class, 'create']);
-Route::post('/promos', [PromoController::class, 'store'])->name('promos.store');
+Route::post('/promos', [PromoController::class, 'store']);

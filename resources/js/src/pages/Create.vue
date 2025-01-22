@@ -1,7 +1,7 @@
 <template>
     <div class="container mx-auto p-4">
         <h1 class="text-2xl font-bold mb-4">Создать промокод</h1>
-        <form @submit.prevent="submitForm" class="space-y-4" method="post" action="/promos">
+        <form @submit.prevent="submit" class="space-y-4">
             <div>
                 <label for="code" class="block font-medium">Код</label>
                 <input
@@ -33,7 +33,7 @@
                     id="value"
                     v-model="form.value"
                     class="w-full border rounded p-2"
-                    placeholder="1.0" step="0.01" min="0" max="10"
+                    step="0.01"
                     required
                 />
             </div>
@@ -41,18 +41,17 @@
             <div>
                 <label for="start_date" class="block font-medium">Дата начала</label>
                 <input
-                    type="date"
+                    type="datetime-local"
                     id="start_date"
                     v-model="form.start_date"
                     class="w-full border rounded p-2"
-                    required
                 />
             </div>
 
             <div>
                 <label for="end_date" class="block font-medium">Дата окончания</label>
                 <input
-                    type="date"
+                    type="datetime-local"
                     id="end_date"
                     v-model="form.end_date"
                     class="w-full border rounded p-2"
@@ -70,6 +69,16 @@
             </div>
 
             <div>
+                <label for="private_users" class="block font-medium">Приватные пользователи (JSON)</label>
+                <textarea
+                    id="private_users"
+                    v-model="form.private_users"
+                    class="w-full border rounded p-2"
+                    placeholder='Например: ["1", "2", "3"]'
+                ></textarea>
+            </div>
+
+            <div>
                 <label for="frequency" class="block font-medium">Частота</label>
                 <select
                     id="frequency"
@@ -83,15 +92,6 @@
             </div>
 
             <div>
-                <label for="private_users" class="block font-medium">Приватные пользователи (ID через запятую)</label>
-                <textarea
-                    id="private_users"
-                    v-model="form.private_users"
-                    class="w-full border rounded p-2"
-                ></textarea>
-            </div>
-
-            <div>
                 <label class="inline-flex items-center">
                     <input
                         type="checkbox"
@@ -102,62 +102,57 @@
                 </label>
             </div>
 
-            <div v-if="form.errors">
-                <p v-for="(error, key) in form.errors" :key="key" class="text-red-500">
-                    {{ error }}
-                </p>
-            </div>
-
             <button
                 type="submit"
                 class="bg-blue-500 text-white px-4 py-2 rounded"
-                :disabled="form.processing"
             >
-                {{ form.processing ? 'Создание...' : 'Создать' }}
+                Создать
             </button>
         </form>
     </div>
 </template>
 
 <script>
-import {router, useForm} from "@inertiajs/vue3";
+import { reactive } from "vue";
 
 export default {
     setup() {
-        const form = useForm({
+        const form = reactive({
             code: "",
-            type: "percentage",
-            value: "",
+            type: "fixed",
+            value: 0,
             start_date: "",
             end_date: "",
             is_active: true,
-            max_uses: "",
-            private_users: "",
+            max_uses: null,
+            private_users: "[]",
             frequency: "",
         });
 
-        const submitForm = () => {
-            form.post(router.route(('promos.store')), {
-                preserveState: false,
-                preserveScroll: true,
-                onSuccess: () => {
-                    alert("Промокод успешно создан!");
-                },
-                onError: (errors) => {
-                    console.error(errors);
-                    alert("Ошибка при создании промокода.");
-                },
-            });
-        };
-        //router.post('/promos',form);
+        const submit = async () => {
+            try {
+                const response = await fetch("/promos", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": document
+                            .querySelector('meta[name="csrf-token"]')
+                            .getAttribute("content"),
+                    },
+                    body: JSON.stringify(form),
+                });
 
-        return {form};
+                if (!response.ok) {
+                    throw await response.json();
+                }
+
+                alert("Промокод успешно создан!");
+            } catch (error) {
+                console.error("Ошибка создания промокода:", error);
+            }
+        };
+
+        return {form, submit};
     },
 };
 </script>
-
-<style scoped>
-.container {
-    max-width: 600px;
-}
-</style>
